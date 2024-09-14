@@ -1,0 +1,4 @@
+/* disable scrollbars globally */
+::-webkit-scrollbar {
+    display: none;
+}
