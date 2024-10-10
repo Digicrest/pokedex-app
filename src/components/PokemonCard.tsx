@@ -30,7 +30,6 @@ const PokemonCard: React.FC<PokemonCardProps> = ({ name, image, types }) => {
     };
 
     const StyledCard = styled(Card)(({ theme }: any) => {
-        console.log('typecolor', typeColor);
         return {
             backgroundColor: typeColor,
             color: theme.palette.getContrastText(typeColor),

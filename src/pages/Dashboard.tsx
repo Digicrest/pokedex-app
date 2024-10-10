@@ -3,10 +3,13 @@ import React, { useEffect, useState } from 'react';
 import { fetchAllPokemons } from '../redux/slices/pokemonSlice';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import PokemonCard from '../components/PokemonCard';
-import { Container, TextField, Grid2 as Grid, CircularProgress, Select, MenuItem } from '@mui/material';
+import { Container, TextField, Grid2 as Grid, CircularProgress, Select, MenuItem, Typography } from '@mui/material';
 import axios from 'axios';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { typeColors } from '../utils/typeColors';
+import { SelectChangeEvent } from '@mui/material';
+import { debounce } from 'lodash';
+
 
 const Dashboard: React.FC = () => {
     const dispatch = useAppDispatch();
@@ -35,24 +38,24 @@ const Dashboard: React.FC = () => {
         });
     };
 
-    const handleTypeChange = (target: HTMLSelectElement) => {
-        setSelectedType(target.value);
-    }
+    const handleTypeChange = (event: SelectChangeEvent) => {
+        setSelectedType(event.target.value as string);
+    };
+    const handleSearchChange = debounce((value: string) => {
+        setSearchTerm(value);
+    }, 300);
 
     useEffect(() => {
-        console.log('fetching all pokemons');
         dispatch(fetchAllPokemons(1));
     }, [dispatch]);
 
     useEffect(() => {
-        console.log('fetching pokemons data');
         const fetchPokemonsData = async () => {
             const responses = await Promise.all(
                 allPokemons.map((pokemon) => axios.get(pokemon.url))
             );
             const data = responses.map((res) => res.data);
             setPokemonsData(data);
-            console.log('data', data);
         };
         fetchPokemonsData();
     }, [allPokemons]);
@@ -71,17 +74,18 @@ const Dashboard: React.FC = () => {
                 fullWidth
                 margin="normal"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
             />
 
             {/* Type Filter */}
             <Select
                 value={selectedType}
-                onChange={(e) => handleTypeChange(e.target as HTMLSelectElement)}
+                onChange={handleTypeChange}
                 displayEmpty
                 fullWidth
                 variant="outlined"
             >
+
                 <MenuItem value="">
                     <em>All Types</em>
                 </MenuItem>
@@ -94,23 +98,29 @@ const Dashboard: React.FC = () => {
 
             {/* Pokémon Grid */}
             <InfiniteScroll
-                dataLength={pokemonsData.length}
+                dataLength={filteredPokemons.length}
                 next={fetchMorePokemons}
                 hasMore={hasMore}
                 loader={<CircularProgress />}
             >
-                <Grid container spacing={2}>
-                    {pokemonsData.map((pokemon) => (
-                        <Grid size={3} key={pokemon.name}>
-                            <PokemonCard
-                                name={pokemon.name}
-                                image={pokemon.sprites.front_default}
-                                types={pokemon.types.map((typeInfo: any) => typeInfo.type.name)}
-                            />
-                        </Grid>
-                    ))}
-                </Grid>
+
+                {filteredPokemons.length === 0 ? (
+                    <Typography variant="h6">No Pokémon found.</Typography>
+                ) : (
+                    <Grid container spacing={2}>
+                        {filteredPokemons.map((pokemon) => (
+                            <Grid size={3} key={pokemon.name}>
+                                <PokemonCard
+                                    name={pokemon.name}
+                                    image={pokemon.sprites.front_default}
+                                    types={pokemon.types.map((typeInfo: any) => typeInfo.type.name)}
+                                />
+                            </Grid>
+                        ))}
+                    </Grid>
+                )}
             </InfiniteScroll>
+
 
         </Container>
     );
